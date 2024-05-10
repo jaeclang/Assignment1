@@ -1,0 +1,57 @@
+# Load CSV files
+```{r}
+flights <- read_csv("flights.csv")
+airlines <- read_csv("airlines.csv")
+airports <- read_csv("airports.csv")
+planes <- read_csv("planes.csv")
+weather <- read_csv("weather.csv")
+```
+
+## 2.8 Planes Operated by Multiple Airlines
+
+```{r}
+planes_multiple_airlines <- flights %>%
+  select(tailnum, carrier) %>%
+  distinct() %>%
+  group_by(tailnum) %>%
+  summarise(num_airlines = n_distinct(carrier)) %>%
+  filter(num_airlines > 1) %>%
+  left_join(planes, by = "tailnum") %>%
+  select(tailnum, manufacturer, model, num_airlines) %>%
+  arrange(tailnum)
+```
+# Display the result
+```{r}
+planes_multiple_airlines
+```
+
+## 3.1 Identify Chicago Airports
+
+# Assuming 'airports' is the airports.csv dataset
+```{r}
+chicago_airports <- airports %>%
+  filter(str_detect(name, "Chicago")) %>%
+  select(faa, name)
+```
+# Display the content of chicago_airports
+```{r}
+print(chicago_airports)
+```
+
+## 3.2 Airlines Serving Chicago from New York City
+
+```{r}
+airlines_serving_chicago <- flights %>%
+  filter(origin %in% chicago_airports$faa, dest == "ORD") %>%
+  group_by(carrier) %>%
+  mutate(num_flights = n()) %>%
+  ungroup() %>%
+  left_join(airlines, by = c("carrier" = "carrier")) %>%
+  arrange(desc(num_flights), carrier) %>%
+  select(carrier, name, num_flights) %>%
+  mutate(rank = row_number())
+```
+# Display the result
+```{r}
+print(airlines_serving_chicago)
+```
