@@ -27,7 +27,6 @@ planes_multiple_airlines
 
 ## 3.1 Identify Chicago Airports
 
-# Assuming 'airports' is the airports.csv dataset
 ```{r}
 chicago_airports <- airports %>%
   filter(str_detect(name, "Chicago")) %>%
