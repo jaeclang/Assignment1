@@ -2,18 +2,16 @@
 title: "Assignment"
 format: html
 editor: visual
-author:
-
-IAN LIM 2101230
-LIM WEI JIE 2101242
-NEO KAH SIAK 2101960
-Loo Xian Hui 2102604
-Jaden Edwin Chua 1802965
-
+author: 
+- IAN LIM 2101230
+- LIM WEI JIE 2101242
+- NEO KAH SIAK 2101960
+- Loo Xian Hui 2102604
+- Jaden Edwin Chua 1802965
 ---
 
-
 # Introduction
+
 ```{r}
 #| label: required-packages
 #| message: false
@@ -23,8 +21,8 @@ library(tidyverse)
 
 # Aggregating Information About Flights
 
-
 ## Unzip Data and Import all Extracted CSV Files
+
 unzip(zip_file_path)
 
 ```{r}
@@ -37,7 +35,7 @@ planes <- read.csv("planes.csv")
 weather <- read.csv("weather.csv")
 ```
 
-## 2.2 Rankings of New York City's Main Airports by Number of Destinations Served
+### 2.2 Rankings of New York City's Main Airports by Number of Destinations Served
 
 ```{r}
 #| label: rank-by-airports-served
@@ -51,7 +49,8 @@ flights |>
   arrange(rank,origin)
 ```
 
-## 2.3 Top Ten Destinations Airports by Seats
+### 2.3 Top Ten Destinations Airports by Seats
+
 ```{r}
 # Join flights with planes to get the seat data
 flights_seats <- flights |>
@@ -72,7 +71,8 @@ destination_seats <- flights_seats |>
 print(destination_seats, n = Inf)
 ```
 
-# 2.4 Count the number of flights from each NYC airport to each destination
+### 2.4 Count the number of flights from each NYC airport to each destination
+
 ```{r}
 airport_dest_flights <- flights |>
   filter(origin %in% c("JFK", "LGA", "EWR")) |>
@@ -89,8 +89,7 @@ airport_dest_flights <- flights |>
 print(airport_dest_flights, n = Inf)
 ```
 
-
-## 2.5 Rankings of New York City’s Main Airports by Mean Departure Delay
+### 2.5 Rankings of New York City’s Main Airports by Mean Departure Delay
 
 ```{r}
 #| label: rank-by-airports-mean-departure-delay
@@ -107,7 +106,7 @@ mean_delay %>%
   select(origin, name, mean_departure_delay, rank)
 ```
 
-## 2.6 Percentage of On-Time Flights Despite Departure Delay
+### 2.6 Percentage of On-Time Flights Despite Departure Delay
 
 ```{r}
 #| label: rank-by-on-time-flights
@@ -120,7 +119,7 @@ print(on_time_flights)
 
 ```
 
-## 2.7 On-Time Departure Percentage by Hour of the Day
+### 2.7 On-Time Departure Percentage by Hour of the Day
 
 ```{r}
 hourly_departures <- flights %>%
@@ -133,8 +132,7 @@ hourly_departures <- flights %>%
 print(hourly_departures)
 ```
 
-
-## 2.8 Planes Operated by Multiple Airlines
+### 2.8 Planes Operated by Multiple Airlines
 
 ```{r}
 planes_multiple_airlines <- flights %>%
@@ -147,24 +145,28 @@ planes_multiple_airlines <- flights %>%
   select(tailnum, manufacturer, model, num_airlines) %>%
   arrange(tailnum)
 ```
-# Display the result
+
+#### Display the result
+
 ```{r}
 planes_multiple_airlines
 ```
 
-## 3.1 Identify Chicago Airports
+### 3.1 Identify Chicago Airports
 
 ```{r}
 chicago_airports <- airports %>%
   filter(str_detect(name, "Chicago")) %>%
   select(faa, name)
 ```
+
 # Display the content of chicago_airports
+
 ```{r}
 print(chicago_airports)
 ```
 
-## 3.2 Airlines Serving Chicago from New York City
+### 3.2 Airlines Serving Chicago from New York City
 
 ```{r}
 airlines_serving_chicago <- flights %>%
@@ -176,54 +178,16 @@ airlines_serving_chicago <- flights %>%
   select(carrier, name, num_flights) %>%
   mutate(rank = row_number())
 ```
+
 # Display the result
+
 ```{r}
 print(airlines_serving_chicago)
 ```
 
-```{r}
-#! label: 4.1 Airport-Hour Combinations Absent from the Weather Table
-
-# Merge flights dataset with weather dataset based on origin airport and time_hour
-merged_data <- merge(flights, weather, by = c("origin", "time_hour"), all.x = TRUE)
-
-# Filter rows where weather data is NA
-missing_weather <- merged_data[is.na(merged_data$temp), ]
-
-# Count unique combinations of origin airport and time_hour
-unique_combinations <- nrow(unique(missing_weather[c("origin", "time_hour")]))
-
-# Print the result
-print(unique_combinations)
-
-```
-```{r}
-#! label: 4.2 On-Time Departures by Airport and Precipitation
-# Join flights with airports and weather data
-flights_joined <- flights %>%
-  inner_join(airports, by = c("origin" = "faa")) %>%
-  inner_join(weather, by = c("origin", "year", "month", "day", "hour"))
-
-# Filter out rows with unknown delay or precipitation
-flights_filtered <- flights_joined %>%
-  filter(!is.na(dep_delay) & !is.na(precip))
-
-# Define function to determine if it's dry
-is_dry <- function(precip) precip == 0
-
-# Calculate percentage of on-time departures under dry and wet conditions
-ontime_percentages <- flights_filtered %>%
-  group_by(origin, name, is_dry = is_dry(precip)) %>%
-  summarize(ontime_percentage = mean(dep_delay == 0) * 100) %>%
-  arrange(origin, is_dry)
-
-# Print the results
-print(ontime_percentages)
-
-```
 ### 3.3 On-Time Arrival Percentages by Airline
 
-{r}
+```{r}
 # Ensure complete cases for delay fields
 flights <- flights %>%
   filter(!is.na(dep_delay) & !is.na(arr_delay))
@@ -258,12 +222,12 @@ top_airlines_on_time <- flights %>%
   # Sort by rank and then by carrier for top 10
   arrange(rank, carrier)
 
-# Print the result
 print(top_airlines_on_time)
+```
 
 ### 3.4 Top Ten Models by Frequency
 
-{r}
+```{r}
 #! label: top-ten-models-by-frequency
 # Define a more dynamic filtering approach using the airports data
 top_manufacturer_model <- flights %>%
@@ -289,10 +253,13 @@ top_manufacturer_model <- flights %>%
 
 # View top model
 print(top_manufacturer_model)
+```
 
 ### 3.5 Top Ten Planes by Mean Speed
 
-{r}
+### 3.6
+
+```{r}
 library(readr)
 library(lubridate)
 
@@ -320,6 +287,55 @@ result_vector <- flights %>%
 print(result_vector)
 print(paste("Length of the vector:", length(result_vector)))
 print(paste("Class of the vector:", class(result_vector)))
+```
+
+### 4.1 Airport-Hour Combinations Absent from the Weather Table
+
+```{r}
+#! label: 4.1 Airport-Hour Combinations Absent from the Weather Table
+
+# Merge flights dataset with weather dataset based on origin airport and time_hour
+merged_data <- merge(flights, weather, by = c("origin", "time_hour"), all.x = TRUE)
+
+# Filter rows where weather data is NA
+missing_weather <- merged_data[is.na(merged_data$temp), ]
+
+# Count unique combinations of origin airport and time_hour
+unique_combinations <- nrow(unique(missing_weather[c("origin", "time_hour")]))
+
+# Print the result
+print(unique_combinations)
+
+```
+
+### 4.2 On-Time Departures by Airport and Precipitation
+
+```{r}
+#! label: 4.2 On-Time Departures by Airport and Precipitation
+# Join flights with airports and weather data
+flights_joined <- flights %>%
+  inner_join(airports, by = c("origin" = "faa")) %>%
+  inner_join(weather, by = c("origin", "year", "month", "day", "hour"))
+
+# Filter out rows with unknown delay or precipitation
+flights_filtered <- flights_joined %>%
+  filter(!is.na(dep_delay) & !is.na(precip))
+
+# Define function to determine if it's dry
+is_dry <- function(precip) precip == 0
+
+# Calculate percentage of on-time departures under dry and wet conditions
+ontime_percentages <- flights_filtered %>%
+  group_by(origin, name, is_dry = is_dry(precip)) %>%
+  summarize(ontime_percentage = mean(dep_delay == 0) * 100) %>%
+  arrange(origin, is_dry)
+
+# Print the results
+print(ontime_percentages)
+
+```
+
+### 4.3 Rank Airports by Low-Visibility Departure Delays
 
 ```{r}
 #! label: 4.3 Rank Airports by Low-Visibility Departure Delays
@@ -350,6 +366,8 @@ print(airport_delays)
 
 ```
 
+### 4.4 Correlation between Temperature and Departure Delay
+
 ```{r}
 #! label: 4.4 Correlation between Temperature and Departure Delay
 
@@ -377,4 +395,5 @@ correlation_coefficient_vector <- as.numeric(correlation_coefficient)
 print(correlation_coefficient_vector)
 
 ```
----
+
+------------------------------------------------------------------------
