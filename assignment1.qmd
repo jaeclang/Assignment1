@@ -1,0 +1,89 @@
+---
+title: "assignment1"
+format: html
+editor: visual
+---
+
+# Introduction
+
+```{r}
+#| label: required-packages
+#| message: false
+
+library(tidyverse)
+```
+
+# Aggregating Information About Flights
+
+## Unzip Data and Import all Extracted CSV Files
+
+```{r}
+#| label: unzip-and-import
+
+flights <- read_csv("flights.csv")
+airlines <- read_csv("airlines.csv")
+airports <- read_csv("airports.csv")
+planes <- read_csv("planes.csv")
+weather <- read_csv("weather.csv")
+```
+
+## 2.5 Rankings of New York City’s Main Airports by Mean Departure Delay
+
+```{r}
+#| label: rank-by-airports-mean-departure-delay
+
+mean_delay <- flights %>%
+  filter(!is.na(dep_delay)) %>%
+  group_by(origin) %>%
+  summarise(mean_departure_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  left_join(airports, by = c("origin" = "faa")) %>%
+  arrange(mean_departure_delay, origin) %>%
+  mutate(rank = rank(mean_departure_delay))
+
+mean_delay %>%
+  select(origin, name, mean_departure_delay, rank)
+```
+
+## 2.6 Percentage of On-Time Flights Despite Departure Delay
+
+```{r}
+#| label: rank-by-on-time-flights
+
+# Calculate the total number of flights with at least 30 minutes delay and known arrival delay
+total_flights_with_delay_30 = flights %>%
+  filter(dep_delay >= 30, !is.na(dep_delay), !is.na(arr_delay)) %>%
+  summarise(count = n()) %>%
+  pull(count)
+
+# Calculate the percentage of those flights that still managed to arrive on time
+percent_ontime_after_delay <- flights %>%
+  filter(dep_delay >= 30, !is.na(dep_delay), !is.na(arr_delay), arr_delay <= 0) %>%
+  summarise(count_ontime = n()) %>%
+  mutate(percent_ontime = (count_ontime / total_flights_with_delay_30) * 100) %>%
+  pull(percent_ontime)
+
+print(percent_ontime_after_delay)
+
+```
+
+## 2.7 On-Time Departure Percentage by Hour of the Day
+
+```{r}
+# Calculate on-time departure percentage by hour of the day
+hourly_ontime <- flights %>%
+  filter(!is.na(dep_delay), dep_delay <= 0) %>%
+  group_by(hour) %>%
+  summarise(ontime_departures = n()) %>%
+  left_join(
+    flights %>%
+      filter(!is.na(dep_delay)) %>%
+      group_by(hour) %>%
+      summarise(total_departures = n()),
+    by = "hour"
+  ) %>%
+  mutate(on_time_percentage = (ontime_departures / total_departures) * 100) %>%
+  arrange(hour)
+
+# Display all hours
+print(hourly_ontime, n = Inf)
+```
