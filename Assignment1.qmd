@@ -1,0 +1,101 @@
+---
+title: "Assignment1"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+
+# Introduction
+```{r}
+#| label: required-packages
+#| message: false
+
+library(tidyverse)
+```
+
+# Aggregating Information About Flights
+
+
+## Unzip Data and Import all Extracted CSV Files
+```{r}
+#| label: unzip-and-import
+
+airlines <- read.csv("airlines.csv")
+airports <- read.csv("airports.csv")
+flights <- read.csv("flights.csv")
+planes <- read.csv("planes.csv")
+weather <- read.csv("weather.csv")
+```
+
+## 2.2 Rankings of New York City's Main Airports by Number of Destinations Served
+
+```{r}
+#| label: rank-by-airports-served
+
+flights |>
+  distinct(origin, dest) |>
+  count(origin, name = "n_dest") |>
+  left_join(airports, join_by(origin == faa)) |>
+  mutate(rank = min_rank(desc(n_dest))) |>
+  select(origin, name, n_dest, rank) |>
+  arrange(rank,origin)
+```
+
+## 2.3 Top Ten Destinations Airports by Seats
+```{r}
+# Join flights with planes to get the seat data
+flights_seats <- flights |>
+  inner_join(planes, by = "tailnum") |>
+  filter(origin %in% c("JFK", "LGA", "EWR"))  # Consider only NYC airports
+
+# Calculate the total seats per destination
+destination_seats <- flights_seats |>
+  group_by(dest) |>
+  summarize(total_seats = sum(seats), .groups = "drop") |>
+  left_join(airports, by = c("dest" = "faa")) |>
+  arrange(desc(total_seats), dest) |>
+  mutate(rank = dense_rank(desc(total_seats))) |>
+  filter(rank <= 10) |>
+  select(dest, name, total_seats, rank) |>
+  arrange(rank, dest)
+
+print(destination_seats, n = Inf)
+```
+
+# 2.4 Count the number of flights from each NYC airport to each destination
+```{r}
+airport_dest_flights <- flights |>
+  filter(origin %in% c("JFK", "LGA", "EWR")) |>
+  group_by(origin, dest) |>
+  summarize(num_flights = n(), .groups = "drop") |>
+  left_join(airports, by = c("origin" = "faa")) |>
+  left_join(airports, by = c("dest" = "faa"), suffix = c(".origin", ".dest")) |>
+  group_by(origin) |>
+  mutate(rank = dense_rank(desc(num_flights))) |>
+  filter(rank <= 10) |>
+  select(origin, name.origin, dest, name.dest, num_flights, rank) |>
+  arrange(origin, rank, dest)
+
+print(airport_dest_flights, n = Inf)
+```
