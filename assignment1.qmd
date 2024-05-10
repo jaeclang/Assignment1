@@ -1,0 +1,127 @@
+---
+title: "assignment1"
+format: html
+editor: visual
+author: "Sai Pranav" 
+---
+
+### Initialization
+
+Load Required Packages
+
+```{r}
+#! label: required-packages
+#! message: false
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+
+# Load unique-origin and import all extracted CSV files
+weather <- read_csv("weather.csv")
+airlines <- read_csv("airlines.csv")
+airports <- read_csv("airports.csv")
+planes <- read_csv("planes.csv")
+flights <- read_csv("flights.csv")
+```
+
+### 3.3 On-Time Arrival Percentages by Airline
+
+
+```{r}
+# Ensure complete cases for delay fields
+flights <- flights %>%
+  filter(!is.na(dep_delay) & !is.na(arr_delay))
+
+# Process the data to calculate on-time percentages
+top_airlines_on_time <- flights %>%
+  # Join with airports for origin
+  left_join(airports, by = c("origin" = "faa")) %>%
+  rename(origin_tzone = tzone) %>%
+  filter(grepl("New_York", origin_tzone, ignore.case = TRUE)) %>%
+  # Join with airports for destination
+  left_join(airports, by = c("dest" = "faa")) %>%
+  rename(dest_tzone = tzone) %>%
+  filter(grepl("Chicago", dest_tzone, ignore.case = TRUE)) %>%
+  # Group by carrier
+  group_by(carrier) %>%
+  summarise(
+    total_flights = n(),
+    on_time_flights = sum(dep_delay <= 0 & arr_delay <= 0),
+    .groups = 'drop'
+  ) %>%
+  # Calculate on-time arrival percentage
+  mutate(on_time_percentage = ifelse(total_flights > 0, (on_time_flights / total_flights) * 100, NA_real_)) %>%
+  # Filter carriers with at least 100 flights
+  filter(total_flights >= 100) %>%
+  # Join with airlines to get names
+  left_join(airlines, by = "carrier") %>%
+  # Select needed columns
+  select(carrier, name, on_time_percentage) %>%
+  # Rank airlines based on on-time percentage
+  mutate(rank = rank(-on_time_percentage)) %>%
+  # Sort by rank and then by carrier for top 10
+  arrange(rank, carrier)
+
+# Print the result
+print(top_airlines_on_time)
+```
+
+### 3.4 Top Ten Models by Frequency
+
+```{r}
+#! label: top-ten-models-by-frequency
+# Process the data to calculate top manufacturer-model combinations in one query
+top_manufacturer_model <- flights %>%
+  # Filter for flights between New York and Chicago
+  filter(origin %in% c("JFK", "LGA", "EWR"), dest %in% c("ORD", "MDW")) %>%
+  # Join with planes data to access manufacturer and model
+  left_join(planes, by = "tailnum") %>%
+  # Group by manufacturer and model, count flights
+  group_by(manufacturer, model) %>%
+  summarise(number_of_flights = n(), .groups = 'drop') %>%
+  # Determine ranks, handle ties appropriately
+  mutate(rank = dense_rank(desc(number_of_flights))) %>%
+  # Filter to retain only top 10, including ties
+  filter(rank <= 10) %>%
+  # Sort by rank, then manufacturer, then model
+  arrange(rank, manufacturer, model)
+
+# View the result
+print(top_manufacturer_model)
+
+```
+
+### 3.5 Top Ten Planes by Mean Speed
+
+```{r}
+library(readr)
+library(lubridate)
+
+
+# Process the data to check if there was a flight every day in October 2013 from NYC to Chicago
+result_vector <- flights %>%
+  # Join with airports for origin, filtering for New York based on timezone
+  left_join(airports, by = c("origin" = "faa")) %>%
+  rename(origin_tzone = tzone) %>%
+  filter(grepl("New_York", origin_tzone, ignore.case = TRUE)) %>%
+  # Join with airports for destination, filtering for Chicago based on timezone
+  left_join(airports, by = c("dest" = "faa")) %>%
+  rename(dest_tzone = tzone) %>%
+  filter(grepl("Chicago", dest_tzone, ignore.case = TRUE)) %>%
+  # Filter for October 2013
+  filter(year == 2013, month == 10) %>%
+  mutate(date = make_date(year, month, day)) %>%
+  distinct(date) %>%
+  summarise(all_days_covered = all(seq.Date(from = as.Date("2013-10-01"), 
+                                            to = as.Date("2013-10-31"), 
+                                            by = "day") %in% date)) %>%
+  pull(all_days_covered)
+
+# Print the result and confirm details
+print(result_vector)
+print(paste("Length of the vector:", length(result_vector)))
+print(paste("Class of the vector:", class(result_vector)))
+
+```
