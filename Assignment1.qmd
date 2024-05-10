@@ -41,10 +41,9 @@ print(chicago_airports)
 
 ```{r}
 airlines_serving_chicago <- flights %>%
-  filter(origin %in% chicago_airports$faa, dest == "ORD") %>%
+  filter(origin %in% c("JFK", "LGA", "EWR"), dest == "ORD") %>%
   group_by(carrier) %>%
-  mutate(num_flights = n()) %>%
-  ungroup() %>%
+  summarise(num_flights = n()) %>%
   left_join(airlines, by = c("carrier" = "carrier")) %>%
   arrange(desc(num_flights), carrier) %>%
   select(carrier, name, num_flights) %>%
