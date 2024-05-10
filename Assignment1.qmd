@@ -1,0 +1,131 @@
+---
+title: ""
+format: html
+editor: visual
+---
+```{r}
+
+```
+
+```{r}
+
+library(tidyverse)
+
+# Set the path to the directory containing the zip file
+zip_file_path <- "C:\\Users\\neoal\\Documents\\GitHub\\Assignment1\\nycflights13_data.zip"
+
+# Extract the CSV files using R's unzip function
+unzip(zip_file_path)
+
+# Import the CSV files using tidyverse's read_csv function
+flights <- read_csv("flights.csv") 
+colnames(flights)
+
+airports <- read_csv("airports.csv")
+colnames(airports)
+
+planes <- read_csv("planes.csv")
+colnames(planes)
+
+weather <- read_csv("weather.csv")
+colnames(weather)
+
+```
+```{r}
+#! label: 4.1 Airport-Hour Combinations Absent from the Weather Table
+
+# Merge flights dataset with weather dataset based on origin airport and time_hour
+merged_data <- merge(flights, weather, by = c("origin", "time_hour"), all.x = TRUE)
+
+# Filter rows where weather data is NA
+missing_weather <- merged_data[is.na(merged_data$temp), ]
+
+# Count unique combinations of origin airport and time_hour
+unique_combinations <- nrow(unique(missing_weather[c("origin", "time_hour")]))
+
+# Print the result
+print(unique_combinations)
+
+```
+```{r}
+#! label: 4.2 On-Time Departures by Airport and Precipitation
+# Join flights with airports and weather data
+flights_joined <- flights %>%
+  inner_join(airports, by = c("origin" = "faa")) %>%
+  inner_join(weather, by = c("origin", "year", "month", "day", "hour"))
+
+# Filter out rows with unknown delay or precipitation
+flights_filtered <- flights_joined %>%
+  filter(!is.na(dep_delay) & !is.na(precip))
+
+# Define function to determine if it's dry
+is_dry <- function(precip) precip == 0
+
+# Calculate percentage of on-time departures under dry and wet conditions
+ontime_percentages <- flights_filtered %>%
+  group_by(origin, name, is_dry = is_dry(precip)) %>%
+  summarize(ontime_percentage = mean(dep_delay == 0) * 100) %>%
+  arrange(origin, is_dry)
+
+# Print the results
+print(ontime_percentages)
+
+```
+
+```{r}
+#! label: 4.3 Rank Airports by Low-Visibility Departure Delays
+
+
+# Join flights with airports and weather data
+flights_joined <- flights %>%
+  inner_join(airports, by = c("origin" = "faa")) %>%
+  inner_join(weather, by = c("origin", "year", "month", "day", "hour"))
+
+# Filter out rows with unknown departure delays and visibility less than one mile
+filtered_flights <- flights_joined %>%
+  filter(!is.na(dep_delay), visib < 1)
+
+# Calculate mean departure delay for each airport
+airport_delays <- filtered_flights %>%
+  group_by(origin, name) %>%
+  summarize(mean_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(rank = rank(mean_delay))
+
+# Sort the results by rank and then alphabetically by airport code
+airport_delays <- airport_delays %>%
+  arrange(rank, origin)
+
+# Print the results
+print(airport_delays)
+
+```
+
+```{r}
+#! label: 4.4 Correlation between Temperature and Departure Delay
+
+
+# Join flights with weather data
+flights_weather <- flights %>%
+  inner_join(weather, by = c("origin", "year", "month", "day"))
+
+# Filter out rows with unknown temperature or departure delay
+filtered_data <- flights_weather %>%
+  filter(!is.na(temp) & !is.na(dep_delay))
+
+# Calculate the mean temperature and mean departure delay for each day
+daily_means <- filtered_data %>%
+  group_by(year, month, day) %>%
+  summarize(mean_temp = mean(temp), mean_dep_delay = mean(dep_delay))
+
+# Compute the correlation coefficient
+correlation_coefficient <- cor(daily_means$mean_temp, daily_means$mean_dep_delay)
+
+# Convert the correlation coefficient to a single-element numeric vector
+correlation_coefficient_vector <- as.numeric(correlation_coefficient)
+
+# Confirm the length and class of the result
+print(correlation_coefficient_vector)
+
+```
+---
