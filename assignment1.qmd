@@ -28,8 +28,32 @@ flights <- read_csv("flights.csv")
 
 ### 3.3 On-Time Arrival Percentages by Airline
 
-
 ```{r}
+# Get Airports in Chicago
+airports_chicago <- airports %>%
+  filter(grepl("Chicago", tzone, ignore.case = TRUE))
+
+# Get Airports in New York
+airports_newyork <- airports %>%
+  filter(grepl("New_York", tzone, ignore.case = TRUE))
+
+# Get All flights from New York to Chicago WHERE they are On-Time
+flights_ny_to_chicago <- flights %>%
+  filter(origin %in% airports_newyork$faa, dest %in% airports_chicago$faa, dep_delay <= 0, arr_delay <= 0)
+
+
+# Get carriers with a minimum 100 flights from New York to Chicago
+carriers_ny_to_chicago <- flights_ny_to_chicago %>%
+  group_by(carrier) %>%
+  summarise(total_flights = n()) %>%
+  filter(total_flights >= 100)
+
+# Get airlines of the carriers
+airlines_ny_to_chicago <- airlines %>%
+  filter(carrier %in% carriers_ny_to_chicago$carrier)
+
+###########################################################
+
 # Ensure complete cases for delay fields
 flights <- flights %>%
   filter(!is.na(dep_delay) & !is.na(arr_delay))
@@ -72,10 +96,16 @@ print(top_airlines_on_time)
 
 ```{r}
 #! label: top-ten-models-by-frequency
-# Process the data to calculate top manufacturer-model combinations in one query
+# Define a more dynamic filtering approach using the airports data
 top_manufacturer_model <- flights %>%
-  # Filter for flights between New York and Chicago
-  filter(origin %in% c("JFK", "LGA", "EWR"), dest %in% c("ORD", "MDW")) %>%
+  # Join with airports to filter for New York origins based on timezone description
+  left_join(airports, by = c("origin" = "faa")) %>%
+  filter(grepl("New_York", tzone, ignore.case = TRUE)) %>%
+  select(-name, -lat, -lon, -alt, -tz, -dst, -tzone) %>%  # Remove airport columns not needed
+  # Join with airports to filter for Chicago destinations based on timezone description
+  left_join(airports, by = c("dest" = "faa")) %>%
+  filter(grepl("Chicago", tzone, ignore.case = TRUE)) %>%
+  select(-name, -lat, -lon, -alt, -tz, -dst, -tzone) %>%
   # Join with planes data to access manufacturer and model
   left_join(planes, by = "tailnum") %>%
   # Group by manufacturer and model, count flights
@@ -88,7 +118,7 @@ top_manufacturer_model <- flights %>%
   # Sort by rank, then manufacturer, then model
   arrange(rank, manufacturer, model)
 
-# View the result
+# View top model
 print(top_manufacturer_model)
 
 ```
